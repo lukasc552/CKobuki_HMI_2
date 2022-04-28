@@ -309,9 +309,9 @@ std::thread laserthreadHandle;
         {
             std::cout<<"startujem ci co"<<std::endl;
             ((MainWindow*)param)->skeletonprocess();
-
             return 0;
         }
+
     QThread Imager;
     void imageViewer();
     void sendRobotCommand(char command,double speed=0,int radius=0);
@@ -368,8 +368,10 @@ void skeletonprocess();
     skeleton kostricka;
 
     ControlData controlData;
+    ControlData delayedControlData;
     // FIFO pole
     vector<X_Y> fifo_array;
+    vector<X_Y> done_goals;
 
 //    TKobukiData robotData;
 
@@ -381,7 +383,7 @@ void skeletonprocess();
     short gridCols;
     short mapSampleStep;
     bool readLaserToMap;
-    bool ending = true;
+    bool ending = false;
 
 //    short grid[(int)(6/0.1)][(int)(6/0.1)];
 //    short map[(int)(6/0.1)][(int)(6/0.1)];
@@ -391,8 +393,26 @@ void skeletonprocess();
 
     QPoint qpoint;
     QRect rect;
+//    QRect temp_rect;
+    QRect crop;
+    int shift_x;
+    int shift_y;
 
     bool doControl = false;
+    bool stop = false;
+
+    bool msg = false;
+    QString message;
+//    QTimer *msg_timer;
+    int check = 0;
+
+//    vector<int> dangerLidarIdxVector;
+//    int criticalIdx;
+    int criticalDistLidarToWall = 300;
+    bool dangerZone = false;
+    short removed = 0;
+    bool dangerZoneDelayed = false;
+    short removedDelayed = 0;
 
 private slots:
 
@@ -407,7 +427,7 @@ private slots:
 //    void on_pushButton_6_clicked();
 
     void on_pushButton_clicked();
-    void robotexec();
+//    void robotexec();
 
 //    void on_pushButton_8_clicked();
 
@@ -430,18 +450,23 @@ private slots:
 
     //Moje
     void initialValues();
-    void calcDifferences();
-    void calcLocalisation();
+    void calcDifferences(TKobukiData &sens);
+    void calcLocalisation(TKobukiData &sens);
+    void calcDelayedDifferences(TKobukiData &sens);
+    void calcDelayedLocalisation(TKobukiData &sens);
     void regulateAngle(double error_angle);
     void regulatePosition(double error_distance);
 
-    void compMap(LaserMeasurement laserData);
+    void compMap(LaserMeasurement &laserData);
 
     IJ_idx placeInGrid(X_Y xyg);
     X_Y getXYFromMapIdx(IJ_idx idxs);
+//    void appendLogToPlainText(QString string);
 
     X_Y pixelToCoords(int px, int py);
     IJ_idx coordsToPixels(double x, double y);
+
+//    void on_stop_button_toggled(bool checked);
 
 private:
 

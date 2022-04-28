@@ -79,9 +79,9 @@ void MainWindow::initialValues(){
     controlData.initGyroAngle = sens.GyroAngle;
 
     controlData.rampLimit = 10;
-    controlData.Kp_dist = 300;
+    controlData.Kp_dist = 600;
     controlData.rampLimitAngle = 0.4;
-    controlData.Kp_angle = 1.1;
+    controlData.Kp_angle = 1.6;
     controlData.pa1 = 4*PI/180;
     controlData.pa2 = 7*PI/180;
     controlData.deathAngle = controlData.pa2;
@@ -110,11 +110,11 @@ void MainWindow::initialValues(){
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    painter.setBrush(Qt::black);
+    painter.setBrush(Qt::darkGray);
     QPen pero_walls;
     pero_walls.setStyle(Qt::SolidLine);
     pero_walls.setWidth(1);
-    pero_walls.setColor(Qt::green);
+    pero_walls.setColor(Qt::darkYellow);
 
     QPen pero_lidar;
     pero_lidar.setStyle(Qt::SolidLine);
@@ -136,9 +136,45 @@ void MainWindow::paintEvent(QPaintEvent *event)
     pero_lines.setWidth(2);
     pero_lines.setColor(Qt::yellow);
 
+    QPen pero_msg;
+    pero_msg.setStyle(Qt::SolidLine);
+    pero_msg.setWidth(1);
+    pero_msg.setColor(Qt::blue);
+
     rect = ui->map_frame->geometry();
-    QRect camera_rect = ui->camera_frame->geometry();
     painter.drawRect(rect);
+    painter.setBrush(Qt::black);
+    QRect camera_rect = ui->camera_frame->geometry();
+    QRect message_rect = ui->message_frame->geometry();
+    QRect stop_msg_rect = ui->stop_frame->geometry();
+
+    if(msg){
+        painter.setBrush(Qt::white);
+        painter.drawRect(message_rect);
+        painter.setPen(pero_msg);
+        painter.setFont(QFont("Times", 15, QFont::Bold));
+        painter.drawText(QPoint(message_rect.topLeft().x() + 40, message_rect.topLeft().y()+30), message);
+        check++;
+        if(check>20){
+//            cout << "update..." << endl;
+
+            check = 0;
+            msg = false;
+        }
+        painter.setBrush(Qt::black);
+    }
+
+    if(stop){
+        painter.setBrush(Qt::white);
+        painter.drawRect(stop_msg_rect);
+        QPen stop_pen;
+        stop_pen.setWidth(2);
+        stop_pen.setColor(Qt::red);
+        painter.setPen(stop_pen);
+        painter.setFont(QFont("Times", 15, QFont::Bold));
+        painter.drawText(QPoint(stop_msg_rect.topLeft().x() + 15, stop_msg_rect.topLeft().y()+30), "Emergency STOP");
+        painter.setBrush(Qt::black);
+    }
 
     if(updateCameraPicture==1 && showCamera==true)
     {
@@ -156,26 +192,18 @@ void MainWindow::paintEvent(QPaintEvent *event)
     {
         updateLaserPicture = 0;
 
+        int interest_size = rect.width() < rect.height() ? rect.width() : rect.height();
+//        temp_rect = rect;
+        shift_x = (rect.width() - interest_size)/2;
+        shift_y = (rect.height() - interest_size)/2;
+
+        crop.setRect(rect.topLeft().x()+shift_x, rect.topLeft().y()+shift_y, interest_size, interest_size);
+        painter.drawRect(crop);
+        rect = crop;
         /// ****************
         ///you can change pen or pen color here if you want
         /// ****************
-        painter.setPen(pero_lidar);
-
-        for(int k = 0; k<paintLaserData.numberOfScans; k++){
-            double distance = paintLaserData.Data[k].scanDistance/1000;
-            double alpha = controlData.phi + (360 - paintLaserData.Data[k].scanAngle)*PI/180;
-
-            double xg = controlData.x + distance * cos(alpha);
-            double yg = controlData.y + distance * sin(alpha);
-
-            int x = coordsToPixels(xg, yg).j;
-            int y = coordsToPixels(xg, yg).i;
-
-            if(rect.contains(x, y)){
-                painter.drawEllipse(QPoint(x, y), 2, 2);
-            }
-
-        }
+        ///
 
         painter.setPen(pero_walls);
 
@@ -189,11 +217,29 @@ void MainWindow::paintEvent(QPaintEvent *event)
                     int x = coordsToPixels(xyg.x, xyg.y).j;
                     int y = coordsToPixels(xyg.x, xyg.y).i;
 
-                    if(rect.contains(x, y)){
+                    if(crop.contains(x, y)){
                         painter.drawEllipse(QPoint(x, y), 2, 2);
                     }
                 }
             }
+        }
+
+        painter.setPen(pero_lidar);
+
+        for(int k = 0; k<paintLaserData.numberOfScans; k++){
+            double distance = paintLaserData.Data[k].scanDistance/1000;
+            double alpha = delayedControlData.phi + (360 - paintLaserData.Data[k].scanAngle)*PI/180;
+
+            double xg = delayedControlData.x + distance * cos(alpha);
+            double yg = delayedControlData.y + distance * sin(alpha);
+
+            int x = coordsToPixels(xg, yg).j;
+            int y = coordsToPixels(xg, yg).i;
+
+            if(crop.contains(x, y)){
+                painter.drawEllipse(QPoint(x, y), 2, 2);
+            }
+
         }
 
 //        QVector<QPoint> qvector;
@@ -202,33 +248,40 @@ void MainWindow::paintEvent(QPaintEvent *event)
             int x = coordsToPixels(xy.x, xy.y).j;
             int y = coordsToPixels(xy.x, xy.y).i;
 
-            if(rect.contains(x, y)){
+            if(crop.contains(x, y)){
                 painter.drawEllipse(QPoint(x, y), 2, 2);
             }
-//            qvector.push_back(QPoint(x, y));
+        }
+        pero_goals.setColor(Qt::white);
+        painter.setPen(pero_goals);
+//        for(X_Y xy : done_goals){
+        for(int k = 1;k< done_goals.size(); k++){
+            X_Y xy_old = done_goals.at(k-1);
+            X_Y xy = done_goals.at(k);
+            int x_old = coordsToPixels(xy_old.x, xy_old.y).j;
+            int y_old = coordsToPixels(xy_old.x, xy_old.y).i;
+            int x = coordsToPixels(xy.x, xy.y).j;
+            int y = coordsToPixels(xy.x, xy.y).i;
+
+            painter.drawLine(QPoint(x, y), QPoint(x_old, y_old));
+//            if(crop.contains(x, y)){
+//                painter.drawEllipse(QPoint(x, y), 2, 2);
+//            }
         }
 
 //        painter.setPen(pero_lines);
 //        painter.drawLines(qvector);
 
         painter.setPen(pero_robot);
-        int px_polomer_robota = rect.width()/45;
-        int px_xr = coordsToPixels(controlData.x, controlData.y).j;
-        int px_yr = coordsToPixels(controlData.x, controlData.y).i;
+        int px_polomer_robota = interest_size/45;
+        int px_xr = coordsToPixels(delayedControlData.x, delayedControlData.y).j;
+        int px_yr = coordsToPixels(delayedControlData.x, delayedControlData.y).i;
 //        int px_xr = rect.topLeft().x() + (rect.width()/5 + ((controlData.x/(mapWidth/1.6)) * rect.width()));
 //        int px_yr = rect.bottomLeft().y() - (rect.height()/4 + ((controlData.y/(mapHeight/1.8)) * rect.height()));
 
         painter.drawEllipse(QPoint(px_xr, px_yr), px_polomer_robota, px_polomer_robota);
-        painter.drawLine(QPoint(px_xr, px_yr), QPoint(px_xr + (px_polomer_robota * cos(controlData.phi)), px_yr - (px_polomer_robota * sin(controlData.phi))));
+        painter.drawLine(QPoint(px_xr, px_yr), QPoint(px_xr + (px_polomer_robota * cos(delayedControlData.phi)), px_yr - (px_polomer_robota * sin(delayedControlData.phi))));
 
-//        for(int k=0;k<paintLaserData.numberOfScans;k++)
-//        {
-//            int dist=paintLaserData.Data[k].scanDistance/15;
-//            int xp=720-(360+dist*sin((360.0-paintLaserData.Data[k].scanAngle)*3.14159/180.0));
-//            int yp=620-(310+dist*cos((360.0-paintLaserData.Data[k].scanAngle)*3.14159/180.0));
-//            if(xp<721 && xp>19 && yp<621 && yp>121)
-//                painter.drawEllipse(QPoint(xp, yp),2,2);
-//        }
     }
     if(updateSkeletonPicture==1 && showSkeleton==true)
     {
@@ -266,7 +319,8 @@ void MainWindow::localrobot(TKobukiData &sens)
         prvyStart=false;
     }
 
-
+    calcDelayedDifferences(sens);
+    calcDelayedLocalisation(sens);
 
     PomEncoderL=sens.EncoderLeft;
     if(dl%10==0)
@@ -298,16 +352,46 @@ int MainWindow::locallaser(LaserMeasurement &laserData)
 
     paintThisLidar(laserData);
 
-
+    if(mapSampleStep%10==0/* && readLaserToMap*/){
+        compMap(laserData);
+    }
+    mapSampleStep++;
     //priklad ako zastavit robot ak je nieco prilis blizko
-    if(5<laserData.Data[0].scanDistance && laserData.Data[0].scanDistance<100)
-    {
-        if(doControl){
-            fifo_array.erase(fifo_array.begin());
-//            if(fifo_array.size())
-        }
+//    if(5<laserData.Data[0].scanDistance && laserData.Data[0].scanDistance<100)
+//    {
+//        if(doControl){
+//            fifo_array.erase(fifo_array.begin());
+////            if(fifo_array.size())
+//        }
 
-        sendRobotCommand(ROBOT_STOP);
+//        sendRobotCommand(ROBOT_STOP);
+//    }
+
+    for(int i = 0; i<laserData.numberOfScans; i++){
+        if(5<laserData.Data[i].scanDistance && laserData.Data[i].scanDistance<criticalDistLidarToWall) // 500
+        {
+            dangerZoneDelayed = true;
+//            if(doControl){
+//                fifo_array.erase(fifo_array.begin());
+//                cout<<"Nedosiahnutelny bod" << endl;
+//            }
+//            sendRobotCommand(ROBOT_STOP);
+            break;
+        }
+        if(dangerZoneDelayed){
+            dangerZoneDelayed = false;
+            removedDelayed--;
+        }
+    }
+
+    if(dangerZoneDelayed && removedDelayed==0){
+//        fifo_array.erase(fifo_array.begin());
+        removedDelayed++;
+//        cout<<"Nedosiahnutelny bod" << endl;
+        msg = true;
+        message = ">> Nedosiahnutelny bod! <<";
+
+//        appendLogToPlainText(QString("Nedosiel som"));
     }
     ///PASTE YOUR CODE HERE
     /// ****************
@@ -336,13 +420,52 @@ int MainWindow::autonomouslaser(LaserMeasurement &laserData)
     /// ****************
     ///
 
-    if(mapSampleStep%10==0/* && readLaserToMap*/){
-        compMap(laserData);
+    for(int i = 0; i<laserData.numberOfScans; i++){
+        if(5<laserData.Data[i].scanDistance && laserData.Data[i].scanDistance<criticalDistLidarToWall) // 500
+        {
+            dangerZone = true;
+//            if(doControl){
+//                fifo_array.erase(fifo_array.begin());
+//                cout<<"Nedosiahnutelny bod" << endl;
+//            }
+            sendRobotCommand(ROBOT_STOP);
+            break;
+        }
+        if(dangerZone){
+            dangerZone = false;
+            removed--;
+        }
     }
-    mapSampleStep++;
+
+    if(doControl && dangerZone && removed == 0){
+        fifo_array.erase(fifo_array.begin());
+        removed++;
+        cout<<"Nedosiahnutelny bod" << endl;
+//        msg = true;
+//        message = ">> Nedosiahnutelny bod! <<";
+
+//        appendLogToPlainText(QString("Nedosiel som"));
+    }
+
+
+//    if(mapSampleStep%10==0/* && readLaserToMap*/){
+//        compMap(laserData);
+//    }
+//    mapSampleStep++;
 
     return -1;
 }
+
+//void MainWindow::appendLogToPlainText(QString string){
+//    QPlainTextEdit *qplain = ui->plainTextEdit;
+//    qplain->setReadOnly(true);
+////    qplain->focusProxy()
+
+//    qplain->appendPlainText(string);
+//    QTextCursor c = qplain->textCursor();
+//    c.movePosition(QTextCursor::End);
+//    qplain->setTextCursor(c);
+//}
 
 //--autonomousrobot simuluje slucku robota, ktora bezi priamo na robote
 // predstavte si to tak,ze ste naprogramovali napriklad polohovy regulator, uploadli ste ho do robota a tam sa to vykonava
@@ -356,67 +479,73 @@ void MainWindow::autonomousrobot(TKobukiData &sens)
     /// ****************
     ///
 
-    calcDifferences();
-    calcLocalisation();
+    calcDifferences(sens);
+    calcLocalisation(sens);
 
-
-    if(!fifo_array.empty()){
-        controlData.x_set = fifo_array.front().x;
-        controlData.y_set = fifo_array.front().y;
-
-        double angle_to_target = atan2((controlData.y_set - controlData.y), (controlData.x_set - controlData.x));
-        double error_angle = angle_to_target - controlData.phi;
-        if(error_angle < -PI) error_angle += 2*PI;
-        if(error_angle > PI) error_angle -= 2*PI;
-//        std::cout << "X: " << controlData.x << ", Y: " << controlData.y << ", phi: " << controlData.phi << std::endl;
-//            std::cout << "Angle to target: " << angle_to_target << std::endl;
-//            std::cout << "Error angle: " << error_angle << std::endl;
-        if(abs(error_angle) > controlData.deathAngle)
-        {
-            controlData.deathAngle = controlData.pa1;
-//            std::cout << ">>>>>>>>>>>>>> Otacam sa <<<<<<<<<<<<<<" << std::endl;
-
-            controlData.output = 0;
-            regulateAngle(error_angle);
-
-            std::vector<unsigned char> mess=robot.setRotationSpeed(controlData.outputAngle);
-            sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen);
-        }
-        if(abs(error_angle) <= controlData.deathAngle){
-//            std::cout << ">> Idem priamo <<" << std::endl;
-
-            controlData.deathAngle = controlData.pa2;
-            double measuredValue = sqrt(pow(controlData.x_set-controlData.x,2) + pow(controlData.y_set-controlData.y,2));
-            double error_dist = abs(controlData.setpoint - measuredValue);
-
-            controlData.outputAngle = 0;
-            regulatePosition(error_dist);
-//            std::cout << "Output: " << controlData.output << std::endl;
-//            std::cout << "error_distance: " << error_dist << std::endl;
-            std::vector<unsigned char> mess;
-            if(error_dist < 0.015){
-                mess=robot.setTranslationSpeed(0);
-                fifo_array.erase(fifo_array.begin());
-            }else{
-                mess=robot.setTranslationSpeed(controlData.output);
-            }
-            sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen);
-
-        }
-        ending = true;
+    if(dangerZone){
+        sendRobotCommand(ROBOT_VZAD, -200);
     }else{
-        doControl = false;
-        if(ending){
-//            writeMapToFile();
-            ending = false;
-            std::cout << ">> Nerobim -> Koniec <<" << std::endl;
+
+        if(!fifo_array.empty()){
+            controlData.x_set = fifo_array.front().x;
+            controlData.y_set = fifo_array.front().y;
+
+            double angle_to_target = atan2((controlData.y_set - controlData.y), (controlData.x_set - controlData.x));
+            double error_angle = angle_to_target - controlData.phi;
+            if(error_angle < -PI) error_angle += 2*PI;
+            if(error_angle > PI) error_angle -= 2*PI;
+    //        std::cout << "X: " << controlData.x << ", Y: " << controlData.y << ", phi: " << controlData.phi << std::endl;
+    //            std::cout << "Angle to target: " << angle_to_target << std::endl;
+    //            std::cout << "Error angle: " << error_angle << std::endl;
+            if(abs(error_angle) > controlData.deathAngle)
+            {
+                controlData.deathAngle = controlData.pa1;
+    //            std::cout << ">>>>>>>>>>>>>> Otacam sa <<<<<<<<<<<<<<" << std::endl;
+
+                controlData.output = 0;
+                regulateAngle(error_angle);
+
+                std::vector<unsigned char> mess=robot.setRotationSpeed(controlData.outputAngle);
+                sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen);
+            }
+            if(abs(error_angle) <= controlData.deathAngle){
+    //            std::cout << ">> Idem priamo <<" << std::endl;
+
+                controlData.deathAngle = controlData.pa2;
+                double measuredValue = sqrt(pow(controlData.x_set-controlData.x,2) + pow(controlData.y_set-controlData.y,2));
+                double error_dist = abs(controlData.setpoint - measuredValue);
+
+                controlData.outputAngle = 0;
+                regulatePosition(error_dist);
+    //            std::cout << "Output: " << controlData.output << std::endl;
+    //            std::cout << "error_distance: " << error_dist << std::endl;
+                std::vector<unsigned char> mess;
+                if(error_dist < 0.015){
+                    mess=robot.setTranslationSpeed(0);
+                    done_goals.push_back(fifo_array.front());
+                    fifo_array.erase(fifo_array.begin());
+                }else{
+                    mess=robot.setTranslationSpeed(controlData.output);
+                }
+                sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen);
+
+            }
+            ending = true;
+        }else{
+            doControl = false;
+            if(ending){
+    //            writeMapToFile();
+                ending = false;
+                sendRobotCommand(ROBOT_STOP);
+                std::cout << ">> Nerobim -> Koniec <<" << std::endl;
+                msg = true;
+                message = ">> Uloha splnena <<";
+            }
         }
     }
-
 }
 
-
-void MainWindow::calcDifferences(){
+void MainWindow::calcDifferences(TKobukiData &sens){
     // Pretecenie Encoderov
     controlData.diffEncRight = (sens.EncoderRight + SHORT_HALF_SIZE - controlData.oldEncoderRight) % SHORT_SIZE - SHORT_HALF_SIZE;
     controlData.diffEncLeft = (sens.EncoderLeft + SHORT_HALF_SIZE - controlData.oldEncoderLeft) % SHORT_SIZE - SHORT_HALF_SIZE;
@@ -425,7 +554,7 @@ void MainWindow::calcDifferences(){
     controlData.oldEncoderRight = sens.EncoderRight;
 }
 
-void MainWindow::calcLocalisation(){
+void MainWindow::calcLocalisation(TKobukiData &sens){
     double l_rk = robot.getTickToMeter() * controlData.diffEncRight;
     double l_lk = robot.getTickToMeter() * controlData.diffEncLeft;
     controlData.phi = ((sens.GyroAngle - controlData.initGyroAngle)/100)*PI/180;
@@ -438,6 +567,30 @@ void MainWindow::calcLocalisation(){
     controlData.phi_old = controlData.phi;
     controlData.x_old = controlData.x;
     controlData.y_old = controlData.y;
+}
+
+void MainWindow::calcDelayedDifferences(TKobukiData &sens){
+    // Pretecenie Encoderov
+    delayedControlData.diffEncRight = (sens.EncoderRight + SHORT_HALF_SIZE - delayedControlData.oldEncoderRight) % SHORT_SIZE - SHORT_HALF_SIZE;
+    delayedControlData.diffEncLeft = (sens.EncoderLeft + SHORT_HALF_SIZE - delayedControlData.oldEncoderLeft) % SHORT_SIZE - SHORT_HALF_SIZE;
+
+    delayedControlData.oldEncoderLeft = sens.EncoderLeft;
+    delayedControlData.oldEncoderRight = sens.EncoderRight;
+}
+
+void MainWindow::calcDelayedLocalisation(TKobukiData &sens){
+    double l_rk = robot.getTickToMeter() * delayedControlData.diffEncRight;
+    double l_lk = robot.getTickToMeter() * delayedControlData.diffEncLeft;
+    delayedControlData.phi = ((sens.GyroAngle - delayedControlData.initGyroAngle)/100)*PI/180;
+
+    double lk;
+    lk = (l_rk+l_lk)/2;
+    delayedControlData.x = delayedControlData.x_old + lk * cos(delayedControlData.phi_old); //  sin(phi_new)
+    delayedControlData.y = delayedControlData.y_old + lk * sin(delayedControlData.phi_old);
+
+    delayedControlData.phi_old = delayedControlData.phi;
+    delayedControlData.x_old = delayedControlData.x;
+    delayedControlData.y_old = delayedControlData.y;
 }
 
 void MainWindow::regulateAngle(double error_angle){
@@ -464,16 +617,16 @@ void MainWindow::regulatePosition(double error_distance){
     if(controlData.output > MAX_SPEED) controlData.output = MAX_SPEED;
 }
 
-void MainWindow::compMap(LaserMeasurement laserData){
+void MainWindow::compMap(LaserMeasurement &laserData){
 
-    if(robot.leftForward == true && robot.rightForward == true){
+    if(delayedControlData.diffEncLeft == delayedControlData.diffEncRight /*robot.leftForward == true && robot.rightForward == true*/){
         for (int k =0; k<laserData.numberOfScans; k++) {
             double d = laserData.Data[k].scanDistance/1000;
             if(d < 0.1 || d > 2.2) continue;
-            double alpha = controlData.phi + (360 - laserData.Data[k].scanAngle)*PI/180;
+            double alpha = delayedControlData.phi + (360 - laserData.Data[k].scanAngle)*PI/180;
 
-            double xg = controlData.x + d * cos(alpha);
-            double yg = controlData.y + d * sin(alpha);
+            double xg = delayedControlData.x + d * cos(alpha);
+            double yg = delayedControlData.y + d * sin(alpha);
 
             IJ_idx place = placeInGrid({xg, yg});
             grid[place.i][place.j] = 1;
@@ -505,16 +658,14 @@ X_Y MainWindow::getXYFromMapIdx(IJ_idx idxs){
 
 
 void MainWindow::mousePressEvent(QMouseEvent* event){
-    if(ui->map_frame->geometry().contains(event->pos())){
-
+//    if(ui->map_frame->geometry().contains(event->pos())){
+    if(crop.contains(event->pos())){
         qpoint = ui->map_frame->mapFromGlobal(QCursor::pos());
         cout<< "Klikol som do map-frame-u" << endl;
         cout << "x: " << qpoint.x() << "; y: " <<qpoint.y() << endl;
-//        cout << "x: " << qpoint.x() << "; y: " <<qpoint.y() << endl;
-        X_Y xy = pixelToCoords(qpoint.x(), qpoint.y());
+        X_Y xy = pixelToCoords(qpoint.x()-shift_x, qpoint.y()-shift_y-12);
         fifo_array.push_back(xy);
         doControl = true;
-
     }
 }
 
@@ -522,18 +673,34 @@ void MainWindow::mousePressEvent(QMouseEvent* event){
 X_Y MainWindow::pixelToCoords(int px, int py){
 
     X_Y result;
-    result.x = ((px - rect.width()/5)*mapWidth)/(1.6*rect.width());
-    result.y = mapHeight/4 - ((py - rect.height()/4)*mapHeight)/(1.8*rect.height());
+    result.x = ((px - crop.width()/5)*mapWidth)/(1.6*crop.width());
+    result.y = mapHeight/4 - ((py - crop.height()/4)*mapHeight)/(1.8*crop.height());
 //    result.y = ((py - rect.bottomLeft().y() + (rect.height()/4))*mapHeight)/(1.8*rect.height());
     return result;
 }
 
 IJ_idx MainWindow::coordsToPixels(double x, double y){
     IJ_idx result;
-    result.j = rect.topLeft().x() + (rect.width()/5 + ((x/(mapWidth/1.6)) * rect.width()));
-    result.i = rect.bottomLeft().y() - (rect.height()/4 + ((y/(mapHeight/1.8)) * rect.height()));
+    result.j = crop.topLeft().x() + (crop.width()/5 + ((x/(mapWidth/1.6)) * crop.width()));
+    result.i = crop.bottomLeft().y() - (crop.height()/4 + ((y/(mapHeight/1.8)) * crop.height()));
     return result;
 }
+
+//X_Y MainWindow::pixelToCoords(int px, int py, int interest_size){
+
+//    X_Y result;
+//    result.x = ((px - rect.width()/5)*mapWidth)/(1.8*rect.width());
+//    result.y = mapHeight/4 - ((py - rect.height()/4)*mapHeight)/(1.8*rect.height());
+////    result.y = ((py - rect.bottomLeft().y() + (rect.height()/4))*mapHeight)/(1.8*rect.height());
+//    return result;
+//}
+
+//IJ_idx MainWindow::coordsToPixels(double x, double y, int interest_size){
+//    IJ_idx result;
+//    result.j = crop.topLeft().x() + (crop.width()/5 + ((x/(mapWidth/1.8)) * crop.width()));
+//    result.i = crop.bottomLeft().y() - (crop.height()/4 + ((y/(mapHeight/1.8)) * crop.height()));
+//    return result;
+//}
 
 
 
@@ -848,8 +1015,8 @@ void MainWindow::laserprocess()
 void MainWindow::sendRobotCommand(char command,double speed,int radius)
 {
     globalcommand=command;
-    if(applyDelay==false)
-    {
+//    if(applyDelay==false)
+//    {
 
         std::vector<unsigned char> mess;
         switch(command)
@@ -879,103 +1046,103 @@ void MainWindow::sendRobotCommand(char command,double speed,int radius)
         {
 
         }
-    }
-    else
-    {
-        struct timespec t;
-        RobotCommand newcommand;
-        newcommand.command=command;
-        newcommand.radius=radius;
-        newcommand.speed=speed;
-        //clock_gettime(CLOCK_REALTIME,&t);
-        newcommand.timestamp=std::chrono::steady_clock::now();//(int64_t)(t.tv_sec) * (int64_t)1000000000 + (int64_t)(t.tv_nsec);
-        commandQuery.push_back(newcommand);
-    }
+//    }
+//    else
+//    {
+//        struct timespec t;
+//        RobotCommand newcommand;
+//        newcommand.command=command;
+//        newcommand.radius=radius;
+//        newcommand.speed=speed;
+//        //clock_gettime(CLOCK_REALTIME,&t);
+//        newcommand.timestamp=std::chrono::steady_clock::now();//(int64_t)(t.tv_sec) * (int64_t)1000000000 + (int64_t)(t.tv_nsec);
+//        commandQuery.push_back(newcommand);
+//    }
 }
 
 
 
-void MainWindow::autonomousRobotCommand(char command,double speed,int radius)
-{
-    return;
-    std::vector<unsigned char> mess;
-    switch(command)
-    {
-    case  ROBOT_VPRED:
-        mess=robot.setTranslationSpeed(speed);
-        break;
-    case ROBOT_VZAD:
-        mess=robot.setTranslationSpeed(speed);
-        break;
-    case ROBOT_VLAVO:
-        mess=robot.setRotationSpeed(speed);
-        break;
-    case ROBOT_VPRAVO:
-        mess=robot.setRotationSpeed(speed);
-        break;
-    case ROBOT_STOP:
-        mess=robot.setTranslationSpeed(0);
-        break;
-    case ROBOT_ARC:
-        mess=robot.setArcSpeed(speed,radius);
-        break;
+//void MainWindow::autonomousRobotCommand(char command,double speed,int radius)
+//{
+//    return;
+//    std::vector<unsigned char> mess;
+//    switch(command)
+//    {
+//    case  ROBOT_VPRED:
+//        mess=robot.setTranslationSpeed(speed);
+//        break;
+//    case ROBOT_VZAD:
+//        mess=robot.setTranslationSpeed(speed);
+//        break;
+//    case ROBOT_VLAVO:
+//        mess=robot.setRotationSpeed(speed);
+//        break;
+//    case ROBOT_VPRAVO:
+//        mess=robot.setRotationSpeed(speed);
+//        break;
+//    case ROBOT_STOP:
+//        mess=robot.setTranslationSpeed(0);
+//        break;
+//    case ROBOT_ARC:
+//        mess=robot.setArcSpeed(speed,radius);
+//        break;
 
-    }
-    if (sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen) == -1)
-    {
+//    }
+//    if (sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen) == -1)
+//    {
 
-    }
-}
-void MainWindow::robotexec()
-{
+//    }
+//}
+//void MainWindow::robotexec()
+//{
 
 
-    if(applyDelay==true)
-    {
-        struct timespec t;
+//    if(applyDelay==true)
+//    {
+//        struct timespec t;
 
-        // clock_gettime(CLOCK_REALTIME,&t);
-        auto timestamp=std::chrono::steady_clock::now();;//(int64_t)(t.tv_sec) * (int64_t)1000000000 + (int64_t)(t.tv_nsec);
-        for(int i=0;i<commandQuery.size();i++)
-        {
-       //     std::cout<<(std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp-commandQuery[i].timestamp)).count()<<std::endl;
-            if((std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp-commandQuery[i].timestamp)).count()>(2.5*1000000000))
-            {
-                char cmd=commandQuery[i].command;
-                std::vector<unsigned char> mess;
-                switch(cmd)
-                {
-                case  ROBOT_VPRED:
-                    mess=robot.setTranslationSpeed(commandQuery[i].speed);
-                    break;
-                case ROBOT_VZAD:
-                    mess=robot.setTranslationSpeed(commandQuery[i].speed);
-                    break;
-                case ROBOT_VLAVO:
-                    mess=robot.setRotationSpeed(commandQuery[i].speed);
-                    break;
-                case ROBOT_VPRAVO:
-                    mess=robot.setRotationSpeed(commandQuery[i].speed);
-                    break;
-                case ROBOT_STOP:
-                    mess=robot.setTranslationSpeed(0);
-                    break;
-                case ROBOT_ARC:
-                    mess=robot.setArcSpeed(commandQuery[i].speed,commandQuery[i].radius);
-                    break;
+//        // clock_gettime(CLOCK_REALTIME,&t);
+//        auto timestamp=std::chrono::steady_clock::now();;//(int64_t)(t.tv_sec) * (int64_t)1000000000 + (int64_t)(t.tv_nsec);
+//        for(int i=0;i<commandQuery.size();i++)
+//        {
+//       //     std::cout<<(std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp-commandQuery[i].timestamp)).count()<<std::endl;
+//            if((std::chrono::duration_cast<std::chrono::nanoseconds>(timestamp-commandQuery[i].timestamp)).count()>(2.5*1000000000))
+//            {
+//                char cmd=commandQuery[i].command;
+//                std::vector<unsigned char> mess;
+//                switch(cmd)
+//                {
+//                case  ROBOT_VPRED:
+//                    mess=robot.setTranslationSpeed(commandQuery[i].speed);
+//                    break;
+//                case ROBOT_VZAD:
+//                    mess=robot.setTranslationSpeed(commandQuery[i].speed);
+//                    break;
+//                case ROBOT_VLAVO:
+//                    mess=robot.setRotationSpeed(commandQuery[i].speed);
+//                    break;
+//                case ROBOT_VPRAVO:
+//                    mess=robot.setRotationSpeed(commandQuery[i].speed);
+//                    break;
+//                case ROBOT_STOP:
+//                    mess=robot.setTranslationSpeed(0);
+//                    break;
+//                case ROBOT_ARC:
+//                    mess=robot.setArcSpeed(commandQuery[i].speed,commandQuery[i].radius);
+//                    break;
 
-                }
-                if (sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen) == -1)
-                {
+//                }
+//                if (sendto(rob_s, (char*)mess.data(), sizeof(char)*mess.size(), 0, (struct sockaddr*) &rob_si_posli, rob_slen) == -1)
+//                {
 
-                }
-                commandQuery.erase(commandQuery.begin()+i);
-                i--;
+//                }
+//                commandQuery.erase(commandQuery.begin()+i);
+//                i--;
 
-            }
-        }
-    }
-}
+//            }
+//        }
+//    }
+//}
 
 
 
@@ -1179,7 +1346,15 @@ void MainWindow::imageViewer()
 
 void MainWindow::on_stop_button_clicked() // EMERGENCY STOP BUTTON
 {
-    sendRobotCommand(ROBOT_STOP);
+//    cout << "Stop button: ";
+    if(stop){
+        stop = false;
+//        cout << "true" << endl;
+    }else{
+        sendRobotCommand(ROBOT_STOP);
+        stop = true;
+//        cout << "false" << endl;
+    }
 }
 
 void MainWindow::on_pushButton_4_clicked() // FORWARD
@@ -1205,3 +1380,4 @@ void MainWindow::on_pushButton_clicked() // LEFT
 {
     sendRobotCommand(ROBOT_VLAVO, 3.14159/4);
 }
+

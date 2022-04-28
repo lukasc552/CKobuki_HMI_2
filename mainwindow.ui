@@ -6,115 +6,36 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>744</width>
-    <height>590</height>
+    <width>721</width>
+    <height>580</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
+   <property name="minimumSize">
+    <size>
+     <width>640</width>
+     <height>480</height>
+    </size>
+   </property>
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="15,3,85">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="10,3,95">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="30,30,10,30">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+           <widget class="QFrame" name="message_frame">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QPushButton" name="stop_button">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">background-color: rgb(255, 62, 23);
-color: rgb(0, 0, 0);</string>
-            </property>
-            <property name="text">
-             <string>STOP</string>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
             </property>
            </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QPushButton" name="pushButton">
-              <property name="styleSheet">
-               <string notr="true">background-color: rgb(122, 78, 255);
-color: rgb(3, 3, 3);</string>
-              </property>
-              <property name="text">
-               <string>Left</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_3">
-              <item>
-               <widget class="QPushButton" name="pushButton_4">
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgb(122, 78, 255);
-color: rgb(3, 3, 3);</string>
-                </property>
-                <property name="text">
-                 <string>Forward</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButton_3">
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgb(122, 78, 255);
-color: rgb(3, 3, 3);</string>
-                </property>
-                <property name="text">
-                 <string>Backward</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pushButton_2">
-              <property name="styleSheet">
-               <string notr="true">background-color: rgb(122, 78, 255);
-color: rgb(3, 3, 3);</string>
-              </property>
-              <property name="text">
-               <string>Right</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
           </item>
          </layout>
         </item>
@@ -132,7 +53,7 @@ color: rgb(3, 3, 3);</string>
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout" stretch="70,30">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="75,30">
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_5" stretch="95">
             <item>
@@ -148,9 +69,15 @@ color: rgb(3, 3, 3);</string>
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_2" stretch="40,0,60">
+           <layout class="QVBoxLayout" name="verticalLayout_2" stretch="20,0,20,10,0">
             <item>
              <widget class="QFrame" name="camera_frame">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
               <property name="frameShape">
                <enum>QFrame::StyledPanel</enum>
               </property>
@@ -167,6 +94,22 @@ color: rgb(3, 3, 3);</string>
              </widget>
             </item>
             <item>
+             <widget class="QFrame" name="stop_frame">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="verticalSpacer">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -178,6 +121,23 @@ color: rgb(3, 3, 3);</string>
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="stop_button">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(255, 62, 23);
+color: rgb(0, 0, 0);</string>
+              </property>
+              <property name="text">
+               <string>STOP</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -194,7 +154,7 @@ color: rgb(3, 3, 3);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>744</width>
+     <width>721</width>
      <height>21</height>
     </rect>
    </property>
