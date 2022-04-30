@@ -200,6 +200,28 @@ typedef struct
 
 typedef struct
 {
+    bool prvyStart;
+
+    double altLidar;
+    double altCamera;
+    double Y;
+
+    double camWidthAngle;
+    double camHeightAngle;
+
+    double f;
+//    double X;
+//    double Z;
+//    double D;
+    int xobr;
+    int yobr;
+    double z;
+
+    vector<cv::Rect> vecRect;
+}FusionData;
+
+typedef struct
+{
      std::chrono::steady_clock::time_point timestamp;
     int command;
     double speed;
@@ -369,6 +391,7 @@ void skeletonprocess();
 
     ControlData controlData;
     ControlData delayedControlData;
+    FusionData fusionData;
     // FIFO pole
     vector<X_Y> fifo_array;
     vector<X_Y> done_goals;
@@ -403,8 +426,12 @@ void skeletonprocess();
 
     bool msg = false;
     QString message;
-//    QTimer *msg_timer;
     int check = 0;
+
+    bool warn = false;
+//    QString warn_message;
+//    int warn_check = 0;
+//    QTimer *msg_timer;
 
 //    vector<int> dangerLidarIdxVector;
 //    int criticalIdx;
@@ -466,6 +493,7 @@ private slots:
     X_Y pixelToCoords(int px, int py);
     IJ_idx coordsToPixels(double x, double y);
 
+    cv::Mat getLidarFusion(cv::Mat oldFrameBuff);
 //    void on_stop_button_toggled(bool checked);
 
 private:

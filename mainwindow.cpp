@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
     dl=0;
     stopall=1;
     prvyStart=true;
+    fusionData.prvyStart = true;
     updateCameraPicture=0;
     ipaddress="127.0.0.1";
     std::function<void(void)> f =std::bind(&robotUDPVlakno, (void *)this);
@@ -89,16 +90,16 @@ void MainWindow::initialValues(){
 
     done_goals.push_back({0.0, 0.0});
 
-//    if(fusionData.prvyStart){
-//        fusionData.altLidar = 0.21;
-//        fusionData.altCamera = 0.15;
-//        fusionData.Y = fusionData.altLidar - fusionData.altCamera;
-//        fusionData.camWidthAngle = (54-2)*PI/180;
-//        fusionData.camHeightAngle = 40*PI/180;
-//        fusionData.f = 628.036;
+    if(fusionData.prvyStart){
+        fusionData.altLidar = 0.21;
+        fusionData.altCamera = 0.15;
+        fusionData.Y = fusionData.altLidar - fusionData.altCamera;
+        fusionData.camWidthAngle = (54-2)*PI/180;
+        fusionData.camHeightAngle = 40*PI/180;
+        fusionData.f = 628.036;
 
-//        fusionData.prvyStart = false;
-//    }
+        fusionData.prvyStart = false;
+    }
 }
 
 
@@ -145,6 +146,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
     pero_msg.setColor(Qt::blue);
 
     rect = ui->map_frame->geometry();
+    rect.translate(0, 12);
     painter.drawRect(rect);
     painter.setBrush(Qt::black);
     QRect camera_rect = ui->camera_frame->geometry();
@@ -206,6 +208,36 @@ void MainWindow::paintEvent(QPaintEvent *event)
 //        painter.drawImage(20, 120, imgIn);
 //        painter.drawImage(camera_rect.topLeft().x(), camera_rect.topLeft().y()+5, imgIn);
         painter.drawImage(croped_camera.topLeft().x(), croped_camera.topLeft().y()+5, imgIn);
+
+//        QPen warningTextPen;
+//        warningTextPen.setWidth(3);
+//        warningTextPen.setColor(Qt::red);
+
+////                painter.setBrush(Qt::red);
+//        painter.setPen(warningTextPen);
+//        painter.setFont(QFont("Times", 15, QFont::Bold));
+//        painter.drawText(croped_camera, Qt::AlignHCenter | Qt::AlignVCenter, "Warning");
+
+//        if(warn){
+            if(warn){
+                QPen warningTextPen;
+                warningTextPen.setWidth(3);
+                warningTextPen.setColor(Qt::red);
+
+//                painter.setBrush(Qt::red);
+                painter.setPen(warningTextPen);
+                painter.setFont(QFont("Times", 18, QFont::Bold));
+                painter.drawText(croped_camera, Qt::AlignHCenter | Qt::AlignVCenter, tr("Collision\nwarning"));
+
+            }
+//            warn_check++;
+//            if(warn_check>20){
+//    //            cout << "update..." << endl;
+
+//                warn_check = 0;
+//                warn = false;
+//            }
+//        }
       //  cv::imshow("client",robotPicture);
     }
     applyDelay = true;
@@ -425,6 +457,32 @@ int MainWindow::locallaser(LaserMeasurement &laserData)
     /// ROBOT_ARC
     ///
     /// ****************
+
+    for(int i = 0; i<laserData.numberOfScans; i++){
+        if(5<laserData.Data[i].scanDistance && laserData.Data[i].scanDistance<350){
+            warn = true;
+            break;
+        }
+        if(warn){
+            warn = false;
+        }
+    }
+
+//    for(int i = 0; i<laserData.numberOfScans; i++){
+//        if(paintLaserData.Data[i].scanDistance < 100) continue;
+
+//        double D = paintLaserData.Data[i].scanDistance/1000;
+//        double alpha = (360 - paintLaserData.Data[i].scanAngle)*PI/180;
+
+//        if(alpha > 2*PI-(fusionData.camWidthAngle/2) || alpha < fusionData.camWidthAngle/2){
+
+//            double Z = D * cos(alpha);
+//            double X = D * sin(alpha);
+
+
+//        }
+
+//    }
 
     return -1;
 }
@@ -688,7 +746,7 @@ void MainWindow::mousePressEvent(QMouseEvent* event){
         qpoint = ui->map_frame->mapFromGlobal(QCursor::pos());
         cout<< "Klikol som do map-frame-u" << endl;
         cout << "x: " << qpoint.x() << "; y: " <<qpoint.y() << endl;
-        X_Y xy = pixelToCoords(qpoint.x()-shift_x, qpoint.y()-shift_y-12);
+        X_Y xy = pixelToCoords(qpoint.x()-shift_x, qpoint.y()-shift_y-(crop.height()/20));
         fifo_array.push_back(xy);
         doControl = true;
     }
@@ -709,6 +767,17 @@ IJ_idx MainWindow::coordsToPixels(double x, double y){
     result.j = crop.topLeft().x() + (crop.width()/5 + ((x/(mapWidth/1.6)) * crop.width()));
     result.i = crop.bottomLeft().y() - (crop.height()/4 + ((y/(mapHeight/1.8)) * crop.height()));
     return result;
+}
+
+cv::Mat MainWindow::getLidarFusion(cv::Mat oldFrameBuff)
+{
+    cv::Mat frame = oldFrameBuff;
+
+    if(dangerZoneDelayed){
+
+    }
+
+    return frame;
 }
 
 //X_Y MainWindow::pixelToCoords(int px, int py, int interest_size){

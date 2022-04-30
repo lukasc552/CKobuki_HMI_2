@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>721</width>
-    <height>580</height>
+    <width>755</width>
+    <height>593</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,6 +31,9 @@
            <layout class="QVBoxLayout" name="verticalLayout_5" stretch="95">
             <item>
              <widget class="QFrame" name="map_frame">
+              <property name="styleSheet">
+               <string notr="true"/>
+              </property>
               <property name="frameShape">
                <enum>QFrame::StyledPanel</enum>
               </property>
@@ -121,11 +124,15 @@
               </property>
               <property name="styleSheet">
                <string notr="true">background-color: rgb(255, 62, 23);
+alternate-background-color: rgb(255, 0, 0);
 font: 700 italic 16pt &quot;Segoe UI&quot;;
 color: rgb(0, 0, 0);</string>
               </property>
               <property name="text">
                <string>STOP</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -144,7 +151,7 @@ color: rgb(0, 0, 0);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>721</width>
+     <width>755</width>
      <height>21</height>
     </rect>
    </property>
