@@ -24,34 +24,7 @@
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="10,3,95">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QFrame" name="message_frame">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="95">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout" stretch="75,30">
           <item>
@@ -69,7 +42,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_2" stretch="20,0,20,10,0">
+           <layout class="QVBoxLayout" name="verticalLayout_2" stretch="20,1,5,1,5,1">
             <item>
              <widget class="QFrame" name="camera_frame">
               <property name="minimumSize">
@@ -86,12 +59,18 @@
               </property>
              </widget>
             </item>
-            <item alignment="Qt::AlignHCenter">
-             <widget class="QCheckBox" name="checkBox">
-              <property name="text">
-               <string>Delay</string>
+            <item>
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
               </property>
-             </widget>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
             </item>
             <item>
              <widget class="QFrame" name="stop_frame">
@@ -123,6 +102,16 @@
              </spacer>
             </item>
             <item>
+             <widget class="QFrame" name="message_frame">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="stop_button">
               <property name="minimumSize">
                <size>
@@ -132,6 +121,7 @@
               </property>
               <property name="styleSheet">
                <string notr="true">background-color: rgb(255, 62, 23);
+font: 700 italic 16pt &quot;Segoe UI&quot;;
 color: rgb(0, 0, 0);</string>
               </property>
               <property name="text">

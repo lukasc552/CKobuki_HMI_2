@@ -70,6 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
         Imager.start();
+//    applyDelay = true;
 }
 
 void MainWindow::initialValues(){
@@ -85,6 +86,8 @@ void MainWindow::initialValues(){
     controlData.pa1 = 4*PI/180;
     controlData.pa2 = 7*PI/180;
     controlData.deathAngle = controlData.pa2;
+
+    done_goals.push_back({0.0, 0.0});
 
 //    if(fusionData.prvyStart){
 //        fusionData.altLidar = 0.21;
@@ -152,8 +155,9 @@ void MainWindow::paintEvent(QPaintEvent *event)
         painter.setBrush(Qt::white);
         painter.drawRect(message_rect);
         painter.setPen(pero_msg);
-        painter.setFont(QFont("Times", 15, QFont::Bold));
-        painter.drawText(QPoint(message_rect.topLeft().x() + 40, message_rect.topLeft().y()+30), message);
+        painter.setFont(QFont("Times", 10, QFont::Bold));
+//        painter.drawText(QPoint(message_rect.topLeft().x() + 40, message_rect.topLeft().y()+30), message);
+        painter.drawText(message_rect, Qt::AlignHCenter | Qt::AlignVCenter, message);
         check++;
         if(check>20){
 //            cout << "update..." << endl;
@@ -172,22 +176,39 @@ void MainWindow::paintEvent(QPaintEvent *event)
         stop_pen.setColor(Qt::red);
         painter.setPen(stop_pen);
         painter.setFont(QFont("Times", 15, QFont::Bold));
-        painter.drawText(QPoint(stop_msg_rect.topLeft().x() + 15, stop_msg_rect.topLeft().y()+30), "Emergency STOP");
+//        painter.drawText(QPoint(stop_msg_rect.topLeft().x() + 15, stop_msg_rect.topLeft().y()+30), "Emergency STOP");
+        painter.drawText(stop_msg_rect, Qt::AlignHCenter | Qt::AlignVCenter, "Emergency STOP");
         painter.setBrush(Qt::black);
     }
 
     if(updateCameraPicture==1 && showCamera==true)
     {
         updateCameraPicture=0;
+//        int int_camera_size = 3*camera_rect.width() < 4*camera_rect.height() ? camera_rect.width() : camera_rect.height();
+        QRect croped_camera;
+        int cam_rect_width;
+        int cam_rect_height;
+        if(3*camera_rect.width() < 4*camera_rect.height()){
+            cam_rect_width = camera_rect.width();
+            cam_rect_height = (camera_rect.width()/4)*3;
+        }else{
+            cam_rect_height = camera_rect.height();
+            cam_rect_width = (camera_rect.height()/3)*4;
+        }
+        int cam_shift_x = (camera_rect.width() - cam_rect_width)/2;
+        int cam_shift_y = (camera_rect.height() - cam_rect_height)/2;
+        croped_camera.setRect(camera_rect.topLeft().x()+cam_shift_x, camera_rect.topLeft().y()+cam_shift_y, cam_rect_width, cam_rect_height);
 
-        cv::resize(robotPicture, robotPicture, cv::Size(camera_rect.width(), camera_rect.height()), 0, 0, cv::INTER_CUBIC);
+//        cv::resize(robotPicture, robotPicture, cv::Size(camera_rect.width(), camera_rect.height()), 0, 0, cv::INTER_CUBIC);
+        cv::resize(robotPicture, robotPicture, cv::Size(croped_camera.width(), croped_camera.height()), 0, 0, cv::INTER_CUBIC);
 
         QImage imgIn= QImage((uchar*) robotPicture.data, robotPicture.cols, robotPicture.rows, robotPicture.step, QImage::Format_BGR888);
 //        painter.drawImage(20, 120, imgIn);
-        painter.drawImage(camera_rect.topLeft().x(), camera_rect.topLeft().y()+5, imgIn);
+//        painter.drawImage(camera_rect.topLeft().x(), camera_rect.topLeft().y()+5, imgIn);
+        painter.drawImage(croped_camera.topLeft().x(), croped_camera.topLeft().y()+5, imgIn);
       //  cv::imshow("client",robotPicture);
     }
-
+    applyDelay = true;
     if(updateLaserPicture==1 && showLidar==true)
     {
         updateLaserPicture = 0;
@@ -479,6 +500,8 @@ void MainWindow::autonomousrobot(TKobukiData &sens)
     /// ****************
     ///
 
+    if (stop) return;
+
     calcDifferences(sens);
     calcLocalisation(sens);
 
@@ -538,8 +561,10 @@ void MainWindow::autonomousrobot(TKobukiData &sens)
                 ending = false;
                 sendRobotCommand(ROBOT_STOP);
                 std::cout << ">> Nerobim -> Koniec <<" << std::endl;
-                msg = true;
-                message = ">> Uloha splnena <<";
+                if(!dangerZone){
+                    msg = true;
+                    message = ">> Uloha splnena <<";
+                }
             }
         }
     }

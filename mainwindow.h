@@ -408,7 +408,7 @@ void skeletonprocess();
 
 //    vector<int> dangerLidarIdxVector;
 //    int criticalIdx;
-    int criticalDistLidarToWall = 300;
+    int criticalDistLidarToWall = 250;
     bool dangerZone = false;
     short removed = 0;
     bool dangerZoneDelayed = false;
